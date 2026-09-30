@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: TROQUE_PELA_URL_DO_SEU_REPO
+    repoURL: https://github.com/tommmdl/argocd-lab.git
     targetRevision: HEAD
     path: overlays/dev
   destination:
