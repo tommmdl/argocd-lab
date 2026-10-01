@@ -1,41 +1,41 @@
 # argocd-lab
 
-Laboratório mínimo de GitOps com ArgoCD e Kustomize, montado para observar na prática
-o comportamento de reconciliação: o que acontece quando um recurso é alterado direto no
-cluster, com e sem self-heal, e o que muda quando a alteração vem do Git.
+Minimal GitOps lab with ArgoCD and Kustomize, built to observe reconciliation behavior
+in practice: what happens when a resource is changed directly in the cluster, with and
+without self-heal, and what changes when the modification comes from Git.
 
-## Estrutura
+## Structure
 
 ```
-base/                  Deployment nginx e Service, com requests, limits e probes
-overlays/dev/          namespace lab-dev, prefixo dev-, 1 réplica
-overlays/prod/         namespace lab-prod, prefixo prod-, 3 réplicas, request de CPU maior
-apps/app-dev.yaml      Application do ArgoCD, self-heal DESLIGADO
-apps/app-prod.yaml     Application do ArgoCD, self-heal LIGADO
-pratica/               manifestos de apoio: classes de QoS, pods em Pending, liveness ruim
-COMANDOS.md            passo a passo completo
+base/                  nginx Deployment and Service, with requests, limits and probes
+overlays/dev/          namespace lab-dev, prefix dev-, 1 replica
+overlays/prod/         namespace lab-prod, prefix prod-, 3 replicas, higher CPU request
+apps/app-dev.yaml      ArgoCD Application, self-heal OFF
+apps/app-prod.yaml     ArgoCD Application, self-heal ON
+pratica/               supporting manifests: QoS classes, Pending pods, bad liveness probe
+COMANDOS.md            full step-by-step walkthrough (in Portuguese)
 ```
 
-As duas Applications têm sync automatizado. A única diferença entre elas é o self-heal,
-o que isola a variável e permite comparar os dois comportamentos lado a lado.
+Both Applications have automated sync. The only difference between them is self-heal,
+which isolates the variable and lets you compare the two behaviors side by side.
 
-## O que o laboratório demonstra
+## What the lab demonstrates
 
-**1. Drift sem self-heal.** Alterar réplicas na mão em `lab-dev` deixa a Application em
-`OutOfSync`, e o ArgoCD não corrige. Ele acusa, mas não age.
+**1. Drift without self-heal.** Manually changing replicas in `lab-dev` leaves the
+Application `OutOfSync`, and ArgoCD does not fix it. It reports the drift, but does not act.
 
-**2. Drift com self-heal.** A mesma alteração em `lab-prod` é desfeita sozinha em
-segundos. A reação é rápida porque o ArgoCD observa os recursos do cluster, sem depender
-do ciclo de verificação do Git.
+**2. Drift with self-heal.** The same change in `lab-prod` is reverted on its own within
+seconds. The reaction is fast because ArgoCD watches the cluster resources, without
+depending on the Git polling cycle.
 
-**3. Mudança pelo Git.** Commit e push alterando o overlay de prod é aplicado e mantido.
+**3. Change through Git.** A commit and push changing the prod overlay is applied and kept.
 
-Mesmo comando, resultado oposto, conforme a origem da alteração e a configuração de
-self-heal.
+Same command, opposite result, depending on where the change comes from and on the
+self-heal setting.
 
-## Como rodar
+## How to run
 
-Pré-requisitos: Docker, kind, kubectl.
+Prerequisites: Docker, kind, kubectl.
 
 ```bash
 kind create cluster --name lab
@@ -45,10 +45,10 @@ kubectl apply --server-side --force-conflicts -n argocd \
 kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
 ```
 
-O `--server-side` é obrigatório: o CRD do ApplicationSet passa do limite de 262144 bytes
-da annotation `last-applied-configuration` usada pelo apply client-side.
+`--server-side` is required: the ApplicationSet CRD exceeds the 262144-byte limit of the
+`last-applied-configuration` annotation used by client-side apply.
 
-Senha inicial e interface:
+Initial password and UI:
 
 ```bash
 kubectl -n argocd get secret argocd-initial-admin-secret \
@@ -56,26 +56,25 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 kubectl port-forward -n argocd svc/argocd-server 8080:443
 ```
 
-Depois aplique as Applications e siga o `COMANDOS.md` para os experimentos de drift.
+Then apply the Applications and follow `COMANDOS.md` for the drift experiments.
 
-## Detalhes que só apareceram fazendo
+## Things that only showed up in practice
 
-**commonLabels do Kustomize.** Foi depreciado em favor de `labels` com
-`includeSelectors: false`. O motivo é que o `commonLabels` injeta o label também no
-selector do Deployment, e selector é imutável. Adicionar um label novo em algo que já
-está em produção faz o apply falhar.
+**Kustomize commonLabels.** It was deprecated in favor of `labels` with
+`includeSelectors: false`. The reason is that `commonLabels` also injects the label into
+the Deployment selector, and the selector is immutable. Adding a new label to something
+already running in production makes the apply fail.
 
-**Limit de CPU.** O Deployment define request de CPU e limit de memória, mas não limit de
-CPU. Request garante escalonamento previsível, limit de memória protege o nó contra
-vazamento, e limit de CPU causa throttling, que costuma piorar latência em serviço
-sensível.
+**CPU limit.** The Deployment sets a CPU request and a memory limit, but no CPU limit.
+The request ensures predictable scheduling, the memory limit protects the node against
+leaks, and a CPU limit causes throttling, which tends to hurt latency in
+latency-sensitive services.
 
-**Credential helper no WSL.** Sem `credsStore` definido, o Docker CLI no Linux procura um
-binário `docker-credential-*` no PATH. O WSL concatena o PATH do Windows, e um helper do
-Rancher Desktop encontrado por ali trava qualquer `docker pull`, inclusive o da imagem do
-nó do kind.
+**Credential helper on WSL.** Without `credsStore` set, the Docker CLI on Linux looks for
+a `docker-credential-*` binary in PATH. WSL appends the Windows PATH, and a Rancher
+Desktop helper found there hangs every `docker pull`, including the kind node image.
 
-## Limpeza
+## Cleanup
 
 ```bash
 kind delete cluster --name lab
