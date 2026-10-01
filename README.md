@@ -13,7 +13,8 @@ overlays/prod/         namespace lab-prod, prefix prod-, 3 replicas, higher CPU 
 apps/app-dev.yaml      ArgoCD Application, self-heal OFF
 apps/app-prod.yaml     ArgoCD Application, self-heal ON
 pratica/               supporting manifests: QoS classes, Pending pods, bad liveness probe
-COMANDOS.md            full step-by-step walkthrough (in Portuguese)
+COMMANDS.md            full step-by-step walkthrough (English)
+COMANDOS.md            same walkthrough in Portuguese
 ```
 
 Both Applications have automated sync. The only difference between them is self-heal,
@@ -56,7 +57,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 kubectl port-forward -n argocd svc/argocd-server 8080:443
 ```
 
-Then apply the Applications and follow `COMANDOS.md` for the drift experiments.
+Then apply the Applications and follow [COMMANDS.md](COMMANDS.md) for the drift
+experiments ([Portuguese version](COMANDOS.md)).
 
 ## Things that only showed up in practice
 
