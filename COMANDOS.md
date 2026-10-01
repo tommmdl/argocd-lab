@@ -1,12 +1,18 @@
 # Lab ArgoCD + Kustomize
 
-## 1. Publicar este diretorio como repositorio publico
+## 1. Obter o repositorio
+Os passos 1 a 5 funcionam apontando para github.com/tommmdl/argocd-lab em modo
+leitura: o repoURL dos apps/ ja aponta para ele e o ArgoCD so precisa clonar.
+git clone https://github.com/tommmdl/argocd-lab.git
 cd argocd-lab
-git init && git add . && git commit -m "lab argocd kustomize"
-gh repo create argocd-lab --public --source=. --push
-# sem gh: crie o repo no GitHub e faca git remote add origin + git push -u origin main
 
-Depois troque TROQUE_PELA_URL_DO_SEU_REPO nos dois arquivos de apps/.
+O passo 6 (mudanca via Git) exige push, entao precisa de fork proprio, com o
+repoURL dos apps/ apontando para ele:
+gh repo fork tommmdl/argocd-lab --clone
+cd argocd-lab
+sed -i 's#github.com/tommmdl/argocd-lab#github.com/SEU_USUARIO/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml
+git commit -am "aponta apps para o fork" && git push
+# se as Applications ja foram criadas, reaplique: kubectl apply -f apps/
 
 ## 2. Cluster e ArgoCD
 kind create cluster --name lab
