@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pending-seletor
+spec:
+  nodeSelector:
+    disktype: ssd-que-nao-existe
+  containers:
+    - name: app
+      image: nginx:1.27-alpine
