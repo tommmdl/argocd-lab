@@ -12,7 +12,7 @@ Step 6 (change through Git) requires a push, so you need your own fork, with
 the repoURL in apps/ pointing to it:
 gh repo fork tommmdl/argocd-lab --clone
 cd argocd-lab
-sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml
+sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml appsets/lab.yaml
 git commit -am "point apps to the fork" && git push
 # if the Applications were already created, reapply: kubectl apply -f apps/
 
@@ -51,3 +51,18 @@ kubectl -n argocd patch application lab-prod --type merge -p '{"operation":{"syn
 ## 7. See what Kustomize generates, without a cluster
 kubectl kustomize overlays/dev
 kubectl kustomize overlays/prod
+
+## 8. Same lab with an ApplicationSet (optional)
+# appsets/lab.yaml generates lab-dev and lab-prod from one template;
+# it replaces the two Applications in apps/, use one or the other
+kubectl -n argocd delete application lab-dev lab-prod
+# the Applications in apps/ have no finalizer, so the workloads stay
+kubectl apply -f appsets/lab.yaml
+kubectl -n argocd get applicationset lab
+kubectl -n argocd get applications
+# wait for Succeeded before repeating steps 4 and 5: a new Application
+# auto-syncs once even without self-heal, and that would undo the drift in lab-dev
+kubectl -n argocd get application lab-dev -o jsonpath='{.status.operationState.phase}'; echo
+# to go back (preserveResourcesOnDeletion keeps the workloads):
+kubectl -n argocd delete applicationset lab
+kubectl apply -f apps/

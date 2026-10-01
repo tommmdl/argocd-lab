@@ -1,0 +1,43 @@
+# Generates lab-dev and lab-prod from a single template.
+# Equivalent to apps/app-dev.yaml + apps/app-prod.yaml: use one or the other, not both.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: lab
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - list:
+        elements:
+          - env: dev
+            selfHeal: false
+          - env: prod
+            selfHeal: true
+  template:
+    metadata:
+      name: 'lab-{{ .env }}'
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/tommmdl/argocd-lab.git
+        targetRevision: HEAD
+        path: 'overlays/{{ .env }}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 'lab-{{ .env }}'
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+  # selfHeal is a boolean, and a plain template only renders strings,
+  # so it goes in templatePatch, which is rendered as YAML after templating.
+  templatePatch: |
+    spec:
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: {{ .selfHeal }}
+  # Deleting the ApplicationSet must not cascade into the workloads.
+  syncPolicy:
+    preserveResourcesOnDeletion: true

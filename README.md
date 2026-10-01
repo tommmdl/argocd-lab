@@ -12,6 +12,7 @@ overlays/dev/          namespace lab-dev, prefix dev-, 1 replica
 overlays/prod/         namespace lab-prod, prefix prod-, 3 replicas, higher CPU request
 apps/app-dev.yaml      ArgoCD Application, self-heal OFF
 apps/app-prod.yaml     ArgoCD Application, self-heal ON
+appsets/lab.yaml       ApplicationSet generating both Applications from one template
 pratica/               supporting manifests: QoS classes, Pending pods, bad liveness probe
 COMMANDS.md            full step-by-step walkthrough (English)
 COMANDOS.md            same walkthrough in Portuguese
@@ -33,6 +34,14 @@ depending on the Git polling cycle.
 
 Same command, opposite result, depending on where the change comes from and on the
 self-heal setting.
+
+## ApplicationSet variant
+
+The two files in `apps/` differ only in the environment name and the self-heal flag.
+`appsets/lab.yaml` generates the same two Applications from a single template with a list
+generator, so adding an environment becomes one more list entry instead of a copied file.
+The generated specs were checked against the handwritten ones and are identical. It
+replaces `apps/`, so use one or the other (step 8 of the walkthrough).
 
 ## How to run
 
@@ -75,6 +84,16 @@ latency-sensitive services.
 **Credential helper on WSL.** Without `credsStore` set, the Docker CLI on Linux looks for
 a `docker-credential-*` binary in PATH. WSL appends the Windows PATH, and a Rancher
 Desktop helper found there hangs every `docker pull`, including the kind node image.
+
+**Booleans in ApplicationSet templates.** Go templates only render inside strings, so
+`selfHeal: '{{ .selfHeal }}'` would produce the string `"false"`, which the Application
+schema rejects. The per-environment flag goes in `templatePatch`, which is rendered first
+and parsed as YAML afterwards, so the value comes out as a real boolean.
+
+**The first automated sync ignores self-heal.** A freshly created Application has never
+synced the current revision, so automated sync runs once even with self-heal off. Drifting
+`lab-dev` right after creating it gets reverted, which looks exactly like self-heal. Wait
+for the first sync to finish before testing drift.
 
 ## Cleanup
 
