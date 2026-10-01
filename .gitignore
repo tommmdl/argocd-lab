@@ -1,0 +1,21 @@
+# kubeconfig local
+kubeconfig
+*.kubeconfig
+.kube/
+
+# arquivos temporarios
+*.tmp
+*.bak
+*.log
+*~
+
+# sistema operacional
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# editores
+.vscode/
+.idea/
+*.swp
+*.swo
