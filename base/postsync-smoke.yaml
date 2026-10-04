@@ -1,0 +1,38 @@
+# PostSync hook: runs after every wave is applied and healthy.
+# If the Service does not answer, the sync is marked as failed.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-test
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke-test
+          image: busybox:1.36
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          # The overlays add a namePrefix, so the Service is dev-web or prod-web.
+          # Kustomize does not rewrite names inside a command, so derive it
+          # from the namespace: lab-dev -> dev-web.
+          command:
+            - sh
+            - -c
+            - |
+              svc="${NAMESPACE#lab-}-web"
+              echo "GET http://$svc"
+              wget -q -O /dev/null -T 5 "http://$svc" && echo "OK"
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi

@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - deployment.yaml
   - service.yaml
+  - presync-migrate.yaml
+  - postsync-smoke.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: lab

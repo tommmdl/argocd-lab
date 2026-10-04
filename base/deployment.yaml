@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web
+  annotations:
+    # Applied after wave 0 (the Service) is healthy.
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   selector:
