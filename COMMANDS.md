@@ -66,3 +66,17 @@ kubectl -n argocd get application lab-dev -o jsonpath='{.status.operationState.p
 # to go back (preserveResourcesOnDeletion keeps the workloads):
 kubectl -n argocd delete applicationset lab
 kubectl apply -f apps/
+
+## 9. See sync waves and hooks
+# every full sync runs: PreSync migrate -> Service (wave 0) -> Deployment (wave 1) -> PostSync smoke-test
+kubectl -n argocd patch application lab-dev --type merge -p '{"operation":{"sync":{}}}'
+kubectl -n argocd get application lab-dev -o jsonpath='{range .status.operationState.syncResult.resources[*]}{.syncPhase}{"\t"}{.kind}{"\t"}{.name}{"\n"}{end}'
+kubectl -n lab-dev get jobs
+kubectl -n lab-dev logs job/dev-migrate
+kubectl -n lab-dev logs job/dev-smoke-test
+# the smoke test fails when the Service has no endpoints, and the sync fails with it.
+# self-heal does NOT run hooks: it only syncs what drifted
+kubectl -n lab-prod scale deploy/prod-web --replicas=9
+sleep 25
+kubectl -n lab-prod get jobs
+# same jobs, same age: only the Deployment was synced

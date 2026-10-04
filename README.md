@@ -7,7 +7,8 @@ without self-heal, and what changes when the modification comes from Git.
 ## Structure
 
 ```
-base/                  nginx Deployment and Service, with requests, limits and probes
+base/                  nginx Deployment and Service, with requests, limits and probes,
+                       sync waves and PreSync/PostSync hook Jobs
 overlays/dev/          namespace lab-dev, prefix dev-, 1 replica
 overlays/prod/         namespace lab-prod, prefix prod-, 3 replicas, higher CPU request
 apps/app-dev.yaml      ArgoCD Application, self-heal OFF
@@ -43,7 +44,22 @@ generator, so adding an environment becomes one more list entry instead of a cop
 The generated specs were checked against the handwritten ones and are identical. It
 replaces `apps/`, so use one or the other (step 8 of the walkthrough).
 
-## How to run
+## Sync waves and hooks
+
+Every sync runs in a fixed order:
+
+```
+PreSync   Job migrate      stands in for a database migration
+wave 0    Service web
+wave 1    Deployment web   applied only after wave 0 is healthy
+PostSync  Job smoke-test   wget against the Service
+```
+
+If the migration fails, nothing else is applied. If the smoke test fails, the sync is
+marked as failed, even though the new Deployment is already running. Both Jobs use
+`hook-delete-policy: BeforeHookCreation`, so each run replaces the previous one instead of
+piling up. The order can be read from the sync result (step 9 of the walkthrough).
+
 
 Prerequisites: Docker, kind, kubectl.
 
@@ -94,6 +110,17 @@ and parsed as YAML afterwards, so the value comes out as a real boolean.
 synced the current revision, so automated sync runs once even with self-heal off. Drifting
 `lab-dev` right after creating it gets reverted, which looks exactly like self-heal. Wait
 for the first sync to finish before testing drift.
+
+**Self-heal does not run hooks.** A self-heal sync only touches the resources that
+drifted, and hooks are skipped in a partial sync. Scaling `prod-web` by hand gets
+reverted, but `migrate` and `smoke-test` do not run again. They run on full syncs, such
+as a new commit or a manual sync.
+
+**Hooks do not get the namePrefix inside commands.** Kustomize renames the Service to
+`dev-web` or `prod-web`, but it only rewrites known reference fields, not a URL inside a
+shell command. The smoke test reads its namespace through the downward API and derives
+the Service name from it (`lab-dev` -> `dev-web`), which ties the overlay namespace and
+prefix together.
 
 ## Cleanup
 
