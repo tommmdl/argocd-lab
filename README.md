@@ -99,7 +99,9 @@ Use a fresh cluster to reproduce the pinned node version.
 
 See [COMMANDS.md](COMMANDS.md) for credentials, UI access, expected results and
 experiments ([Portuguese version](COMANDOS.md)). Wait for the initial sync to finish
-before changing replicas: a new Application syncs once even with self-heal disabled.
+before changing replicas: an OutOfSync new Application can sync even with self-heal disabled.
+If preserved workloads already match Git, no sync operation is needed; `make wait-sync`
+accepts Synced/Healthy without an operation history.
 
 ## Things that only showed up in practice
 

@@ -9,9 +9,16 @@ for app in "${apps[@]}"; do
     sleep 2
   done
   lab_kubectl -n argocd wait "application/$app" \
-    --for=jsonpath='{.status.operationState.phase}'=Succeeded --timeout=300s
-  lab_kubectl -n argocd wait "application/$app" \
     --for=jsonpath='{.status.sync.status}'=Synced --timeout=300s
   lab_kubectl -n argocd wait "application/$app" \
     --for=jsonpath='{.status.health.status}'=Healthy --timeout=300s
+  phase=$(lab_kubectl -n argocd get application "$app" -o jsonpath='{.status.operationState.phase}')
+  pending=$(lab_kubectl -n argocd get application "$app" -o jsonpath='{.operation}')
+  # Already matching workloads need no sync operation, e.g. after switching
+  # from Applications to ApplicationSet while preserving resources.
+  if [[ -n "$phase" || -n "$pending" ]]; then
+    lab_kubectl -n argocd wait "application/$app" \
+      --for=jsonpath='{.status.operationState.phase}'=Succeeded --timeout=300s
+  fi
 done
+

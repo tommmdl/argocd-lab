@@ -43,7 +43,7 @@ kubectl port-forward -n argocd svc/argocd-server 8080:443
 
 ## 3. Create Applications and wait for the first sync
 
-Run in a second terminal with the same PATH and context. Expected: both Applications are Synced and Healthy, the sync phase is Succeeded, dev has 1 replica and prod has 3. A new Application performs an initial automated sync even with self-heal disabled: wait before testing drift.
+Run in a second terminal with the same PATH and context. Expected: both Applications are Synced and Healthy, the sync phase is Succeeded when an operation was needed, dev has 1 replica and prod has 3. A new OutOfSync Application can perform an automated sync even with self-heal disabled: wait before testing drift. Already matching workloads can be Synced/Healthy without any operation history.
 
 ```bash
 kubectl apply -f apps/
@@ -100,13 +100,19 @@ make validate
 
 ## 8. Use ApplicationSet (optional)
 
-Use Applications or ApplicationSet, one at a time. Restore dev to 1 replica before switching. The handwritten Applications have no deletion finalizer, so their workloads remain. Wait for the generated Applications to finish their first sync before repeating drift experiments. preserveResourcesOnDeletion keeps workloads when deleting this ApplicationSet.
+Use Applications or ApplicationSet, one at a time. Restore dev to 1 replica before switching. The handwritten Applications have no deletion finalizer, so their workloads remain. Wait for the generated Applications to be Synced/Healthy. If preserved workloads already match Git, no new sync occurs. Before testing drift, explicitly sync both Applications to record the current revision; otherwise the first drift can trigger an initial automated sync even with self-heal disabled. preserveResourcesOnDeletion keeps workloads when deleting this ApplicationSet.
 
 ```bash
 kubectl -n lab-dev scale deployment/dev-web --replicas=1
 make wait-sync
 kubectl -n argocd delete application lab-dev lab-prod
 kubectl apply -f appsets/lab.yaml
+make wait-sync
+for app in lab-dev lab-prod; do
+  kubectl -n argocd patch application "$app" --type merge -p '{"operation":{"sync":{}}}'
+  kubectl -n argocd wait "application/$app" \
+    --for=jsonpath='{.status.operationState.phase}'=Succeeded --timeout=300s
+done
 make wait-sync
 make status
 ```

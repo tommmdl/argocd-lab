@@ -43,5 +43,13 @@ check_drift
 lab_kubectl -n argocd delete application lab-dev lab-prod
 lab_kubectl apply -f "$tmp/lab.yaml"
 bash scripts/wait-sync.sh
+# Preserved workloads already match Git, so no automatic sync is needed.
+# Force a full sync to verify hooks and record this revision before drift.
+for app in lab-dev lab-prod; do
+  lab_kubectl -n argocd patch application "$app" --type merge -p '{"operation":{"sync":{}}}'
+  lab_kubectl -n argocd wait "application/$app" \
+    --for=jsonpath='{.status.operationState.phase}'=Succeeded --timeout=300s
+done
+bash scripts/wait-sync.sh
 check_drift
 printf 'Initial sync, hooks and drift checks passed for Applications and ApplicationSet.\n'
