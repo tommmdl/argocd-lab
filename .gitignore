@@ -19,3 +19,8 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local validation tools and Python environment
+.tools/
+.venv/
+__pycache__/
