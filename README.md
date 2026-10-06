@@ -61,29 +61,45 @@ marked as failed, even though the new Deployment is already running. Both Jobs u
 piling up. The order can be read from the sync result (step 9 of the walkthrough).
 
 
-Prerequisites: Docker, kind, kubectl.
+## Reproducible setup and validation
+
+Prerequisites: a running Docker daemon, Bash, curl, tar, Python 3 and make
+(Linux, macOS or WSL). Pinned versions live in [scripts/versions.env](scripts/versions.env):
+Argo CD **v3.5.3**, kind **v0.33.0**, Kubernetes/kubectl **v1.35.8**, and kubeconform
+**v0.7.0**. The kind node image is pinned by digest. Setup always targets `kind-lab`.
 
 ```bash
-kind create cluster --name lab
-kubectl create namespace argocd
-kubectl apply --server-side --force-conflicts -n argocd \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install -r scripts/requirements.txt
+make tools
+make validate
+make setup
+export PATH="$PWD/.tools/bin:$PATH"
+kubectl config use-context kind-lab
+kubectl apply -f apps/
+make wait-sync
+make status
 ```
 
-`--server-side` is required: the ApplicationSet CRD exceeds the 262144-byte limit of the
-`last-applied-configuration` annotation used by client-side apply.
+`make tools` installs binaries locally in `.tools/bin`, verifying their published
+checksums. `make validate` needs no cluster: it renders dev/prod, validates the
+workloads and practice examples against Kubernetes schemas, and validates Applications
+and ApplicationSet against CRDs from the pinned Argo CD release. Missing schemas fail
+the check. Schema validation does not cover controller behavior or scheduling.
 
-Initial password and UI:
+GitHub Actions runs these same checks on pull requests and pushes to main. It also
+creates a disposable kind cluster, checks the initial sync and hooks, and verifies
+drift with self-heal disabled/enabled using both Applications and ApplicationSet.
+The integration job deploys the exact commit under review, rather than main.
 
-```bash
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d; echo
-kubectl port-forward -n argocd svc/argocd-server 8080:443
-```
+Setup uses server-side apply because the ApplicationSet CRD exceeds the client-side
+annotation size limit. It reuses an existing lab cluster without upgrading its nodes.
+Use a fresh cluster to reproduce the pinned node version.
 
-Then apply the Applications and follow [COMMANDS.md](COMMANDS.md) for the drift
-experiments ([Portuguese version](COMANDOS.md)).
+See [COMMANDS.md](COMMANDS.md) for credentials, UI access, expected results and
+experiments ([Portuguese version](COMANDOS.md)). Wait for the initial sync to finish
+before changing replicas: a new Application syncs once even with self-heal disabled.
 
 ## Things that only showed up in practice
 
@@ -125,5 +141,5 @@ prefix together.
 ## Cleanup
 
 ```bash
-kind delete cluster --name lab
+.tools/bin/kind delete cluster --name lab
 ```

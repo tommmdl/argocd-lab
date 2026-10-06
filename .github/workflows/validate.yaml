@@ -1,0 +1,56 @@
+name: Validate lab
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  manifests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation dependencies
+        run: |
+          python3 -m pip install -r scripts/requirements.txt
+          make tools
+      - name: Validate rendered workloads and Argo CD schemas
+        run: make validate
+  integration:
+    needs: manifests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tools
+        run: |
+          python3 -m pip install -r scripts/requirements.txt
+          make tools
+      - name: Create lab and install Argo CD
+        run: make setup
+      - name: Verify hooks, drift and self-heal
+        env:
+          LAB_REPO_URL: https://github.com/${{ github.event.pull_request.head.repo.full_name || github.repository }}.git
+          LAB_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/smoke.sh
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          .tools/bin/kubectl --context kind-lab -n argocd get applications -o yaml || true
+          .tools/bin/kubectl --context kind-lab get pods,jobs -A || true
+          .tools/bin/kubectl --context kind-lab get events -A --sort-by=.metadata.creationTimestamp || true
+          .tools/bin/kubectl --context kind-lab -n argocd logs statefulset/argocd-application-controller --tail=100 || true
+      - name: Delete disposable cluster
+        if: always()
+        run: .tools/bin/kind delete cluster --name lab
