@@ -21,4 +21,3 @@ for app in "${apps[@]}"; do
       --for=jsonpath='{.status.operationState.phase}'=Succeeded --timeout=300s
   fi
 done
-

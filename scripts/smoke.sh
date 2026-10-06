@@ -26,9 +26,12 @@ check_drift() {
     --for=jsonpath='{.status.sync.status}'=OutOfSync --timeout=120s
   sleep 15
   test "$(lab_kubectl -n lab-dev get deployment dev-web -o jsonpath='{.spec.replicas}')" = 5
+  hooks_before=$(lab_kubectl -n lab-prod get job prod-migrate prod-smoke-test -o jsonpath='{range .items[*]}{.metadata.uid}{"\n"}{end}')
   lab_kubectl -n lab-prod scale deployment/prod-web --replicas=9
   lab_kubectl -n lab-prod wait deployment/prod-web \
     --for=jsonpath='{.spec.replicas}'=3 --timeout=120s
+  hooks_after=$(lab_kubectl -n lab-prod get job prod-migrate prod-smoke-test -o jsonpath='{range .items[*]}{.metadata.uid}{"\n"}{end}')
+  test "$hooks_before" = "$hooks_after"
   for env in dev prod; do
     lab_kubectl -n "lab-$env" wait --for=condition=Complete --timeout=120s \
       "job/$env-migrate" "job/$env-smoke-test"

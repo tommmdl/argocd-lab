@@ -124,10 +124,11 @@ Desktop helper found there hangs every `docker pull`, including the kind node im
 schema rejects. The per-environment flag goes in `templatePatch`, which is rendered first
 and parsed as YAML afterwards, so the value comes out as a real boolean.
 
-**The first automated sync ignores self-heal.** A freshly created Application has never
-synced the current revision, so automated sync runs once even with self-heal off. Drifting
-`lab-dev` right after creating it gets reverted, which looks exactly like self-heal. Wait
-for the first sync to finish before testing drift.
+**An initial automated sync can run with self-heal off.** A new OutOfSync Application
+has not synced the current revision, so automated sync can apply it even with self-heal
+disabled. If preserved workloads already match Git, it stays Synced/Healthy without an
+operation history. In that case, run a full sync before testing drift to record the
+revision; otherwise the first drift can trigger that initial sync and be reverted.
 
 **Self-heal does not run hooks.** A self-heal sync only touches the resources that
 drifted, and hooks are skipped in a partial sync. Scaling `prod-web` by hand gets
