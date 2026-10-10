@@ -4,7 +4,7 @@ Portuguese version: [COMANDOS.md](COMANDOS.md)
 
 ## 1. Get the repository
 
-For read-only experiments, clone this repository. For changes through Git (step 6), use your own fork instead and update all three repoURL references before creating Applications.
+For read-only experiments, clone this repository. For changes through Git (step 6), use your own fork instead and update all repoURL references and the project sourceRepos before creating Applications.
 
 ```bash
 git clone https://github.com/tommmdl/argocd-lab.git
@@ -16,7 +16,7 @@ Alternatively, start with a fork:
 ```bash
 gh repo fork tommmdl/argocd-lab --clone
 cd argocd-lab
-sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml appsets/lab.yaml
+sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml appsets/lab.yaml projects/lab.yaml examples/blocked-destination.yaml
 git commit -am "point apps to the fork"
 git push
 ```
@@ -46,6 +46,7 @@ kubectl port-forward -n argocd svc/argocd-server 8080:443
 Run in a second terminal with the same PATH and context. Expected: both Applications are Synced and Healthy, the sync phase is Succeeded when an operation was needed, dev has 1 replica and prod has 3. A new OutOfSync Application can perform an automated sync even with self-heal disabled: wait before testing drift. Already matching workloads can be Synced/Healthy without any operation history.
 
 ```bash
+kubectl apply -f projects/lab.yaml
 kubectl apply -f apps/
 make wait-sync
 make status
@@ -90,7 +91,7 @@ make wait-sync
 
 ## 7. Render and validate without a cluster
 
-Validation renders both overlays and checks workloads, practice manifests, Applications and ApplicationSet. Argo CD schemas are extracted from the pinned release CRDs. Missing schemas and unknown fields fail validation; behavioral mistakes in the practice examples remain intentional. Schema validation cannot verify controller behavior or resource availability.
+Validation renders both overlays and checks workloads, practice manifests, Applications, ApplicationSet, AppProject and the blocked example. Argo CD schemas are extracted from the pinned release CRDs. Missing schemas and unknown fields fail validation; behavioral mistakes in the practice examples remain intentional. Schema validation cannot verify controller behavior or resource availability.
 
 ```bash
 kubectl kustomize overlays/dev
@@ -121,6 +122,7 @@ To return to handwritten Applications:
 
 ```bash
 kubectl -n argocd delete applicationset lab
+kubectl apply -f projects/lab.yaml
 kubectl apply -f apps/
 make wait-sync
 ```
@@ -145,6 +147,31 @@ kubectl -n lab-dev get jobs
 kubectl -n lab-dev logs job/dev-migrate
 kubectl -n lab-dev logs job/dev-smoke-test
 ```
+
+## 10. Test the AppProject boundaries
+
+The Applications from the previous steps are the allowed example: they use project
+`lab` and sync to `lab-dev` and `lab-prod`. The project allows Service, Deployment
+and Job; Namespace is allowed for `CreateNamespace=true`. Other resource kinds are
+denied. These policies govern Argo CD; kubectl commands follow cluster RBAC.
+Namespace permission applies to the kind and does not restrict Namespace names.
+
+The example below targets `lab-blocked`, outside the permitted destinations. It has
+no automated sync. Expected: an `InvalidSpecError` condition reporting that the
+destination is not permitted, without creating workloads. Do not sync it or loosen
+the project to allow the example.
+
+```bash
+kubectl apply -f examples/blocked-destination.yaml
+kubectl -n argocd wait application/lab-blocked \
+  --for=jsonpath='{.status.conditions[0].type}'=InvalidSpecError --timeout=120s
+kubectl -n argocd get application lab-blocked \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.message}{"\n"}{end}'
+kubectl -n argocd delete application lab-blocked
+```
+
+To update an existing lab, apply `projects/lab.yaml` first, then `apps/` or
+`appsets/lab.yaml`, depending on the active variant. The `default` project is unchanged.
 
 ## Troubleshooting
 

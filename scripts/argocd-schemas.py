@@ -23,7 +23,7 @@ def strict_objects(value):
             strict_objects(child)
 
 
-for name in ("application", "applicationset"):
+for name in ("application", "applicationset", "appproject"):
     url = (f"https://raw.githubusercontent.com/argoproj/argo-cd/{version}"
            f"/manifests/crds/{name}-crd.yaml")
     content = subprocess.check_output([

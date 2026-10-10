@@ -11,9 +11,13 @@ trap 'rm -rf "$tmp"' EXIT
 python3 - "$tmp" <<'PY'
 import os, pathlib, sys, yaml
 out = pathlib.Path(sys.argv[1])
-for source in ("apps/app-dev.yaml", "apps/app-prod.yaml", "appsets/lab.yaml"):
+for source in ("apps/app-dev.yaml", "apps/app-prod.yaml", "appsets/lab.yaml", "examples/blocked-destination.yaml", "projects/lab.yaml"):
     resource = yaml.safe_load(pathlib.Path(source).read_text())
     spec = resource["spec"]
+    if resource["kind"] == "AppProject":
+        spec["sourceRepos"] = [os.environ["LAB_REPO_URL"]]
+        (out / "project.yaml").write_text(yaml.safe_dump(resource))
+        continue
     if resource["kind"] == "ApplicationSet":
         spec = spec["template"]["spec"]
     spec["source"]["repoURL"] = os.environ["LAB_REPO_URL"]
@@ -40,6 +44,23 @@ check_drift() {
   lab_kubectl -n lab-dev scale deployment/dev-web --replicas=1
   bash scripts/wait-sync.sh
 }
+lab_kubectl apply -f "$tmp/project.yaml"
+lab_kubectl apply -f "$tmp/blocked-destination.yaml"
+lab_kubectl -n argocd wait application/lab-blocked \
+  --for=jsonpath='{.status.conditions[0].type}'=InvalidSpecError --timeout=120s
+# Reject the destination before fetching or applying any workload.
+lab_kubectl -n argocd get application lab-blocked -o json | python3 -c '
+import json, sys
+app = json.load(sys.stdin)
+assert any(c["type"] == "InvalidSpecError" and "not permitted" in c["message"]
+           and "lab-blocked" in c["message"] for c in app["status"]["conditions"])
+assert not app["status"].get("operationState")
+'
+if lab_kubectl get namespace lab-blocked >/dev/null 2>&1; then
+  echo 'Blocked Application unexpectedly created its destination namespace' >&2
+  exit 1
+fi
+lab_kubectl -n argocd delete application lab-blocked
 lab_kubectl apply -f "$tmp/app-dev.yaml" -f "$tmp/app-prod.yaml"
 bash scripts/wait-sync.sh
 check_drift
@@ -55,4 +76,4 @@ for app in lab-dev lab-prod; do
 done
 bash scripts/wait-sync.sh
 check_drift
-printf 'Initial sync, hooks and drift checks passed for Applications and ApplicationSet.\n'
+printf 'Project destination rejection, initial sync, hooks and drift checks passed for Applications and ApplicationSet.\n'
