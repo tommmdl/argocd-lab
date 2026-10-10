@@ -52,8 +52,8 @@ lab_kubectl -n argocd wait application/lab-blocked \
 lab_kubectl -n argocd get application lab-blocked -o json | python3 -c '
 import json, sys
 app = json.load(sys.stdin)
-assert any(c["type"] == "InvalidSpecError" and "not permitted" in c["message"]
-           and "lab-blocked" in c["message"] for c in app["status"]["conditions"])
+assert any(c["type"] == "InvalidSpecError" and "allowed destinations" in c["message"]
+           and "lab-blocked" in c["message"] for c in app["status"]["conditions"]), app["status"]["conditions"]
 assert not app["status"].get("operationState")
 '
 if lab_kubectl get namespace lab-blocked >/dev/null 2>&1; then
