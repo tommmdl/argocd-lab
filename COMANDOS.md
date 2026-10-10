@@ -4,7 +4,7 @@ Versão em inglês: [COMMANDS.md](COMMANDS.md)
 
 ## 1. Obter o repositório
 
-Para os experimentos de leitura, clone este repositório. Para mudanças via Git (passo 6), use seu próprio fork e atualize as três referências repoURL antes de criar as Applications.
+Para os experimentos de leitura, clone este repositório. Para mudanças via Git (passo 6), use seu próprio fork e atualize as referências repoURL e sourceRepos do projeto antes de criar as Applications.
 
 ```bash
 git clone https://github.com/tommmdl/argocd-lab.git
@@ -16,7 +16,7 @@ Como alternativa, comece com um fork:
 ```bash
 gh repo fork tommmdl/argocd-lab --clone
 cd argocd-lab
-sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml appsets/lab.yaml
+sed -i 's#github.com/tommmdl/argocd-lab#github.com/YOUR_USER/argocd-lab#' apps/app-dev.yaml apps/app-prod.yaml appsets/lab.yaml projects/lab.yaml examples/blocked-destination.yaml
 git commit -am "point apps to the fork"
 git push
 ```
@@ -46,6 +46,7 @@ kubectl port-forward -n argocd svc/argocd-server 8080:443
 Execute em outro terminal com o mesmo PATH e contexto. Esperado: ambas as Applications Synced e Healthy, fase do sync Succeeded quando uma operação foi necessária, dev com 1 réplica e prod com 3. Uma Application nova OutOfSync pode fazer um sync automático mesmo com self-heal desligado: aguarde antes de testar drift. Workloads já iguais ao Git podem ficar Synced/Healthy sem histórico de operação.
 
 ```bash
+kubectl apply -f projects/lab.yaml
 kubectl apply -f apps/
 make wait-sync
 make status
@@ -90,7 +91,7 @@ make wait-sync
 
 ## 7. Renderizar e validar sem cluster
 
-A validação renderiza os dois overlays e confere workloads, manifests de prática, Applications e ApplicationSet. Os schemas do ArgoCD são extraídos dos CRDs da versão fixada. Schemas ausentes e campos desconhecidos falham a validação; os problemas de comportamento nos exemplos de prática continuam intencionais. Schemas não verificam o comportamento dos controllers nem a disponibilidade de recursos.
+A validação renderiza os dois overlays e confere workloads, manifests de prática, Applications, ApplicationSet, AppProject e o exemplo bloqueado. Os schemas do ArgoCD são extraídos dos CRDs da versão fixada. Schemas ausentes e campos desconhecidos falham a validação; os problemas de comportamento nos exemplos de prática continuam intencionais. Schemas não verificam o comportamento dos controllers nem a disponibilidade de recursos.
 
 ```bash
 kubectl kustomize overlays/dev
@@ -121,6 +122,7 @@ Para voltar às Applications manuais:
 
 ```bash
 kubectl -n argocd delete applicationset lab
+kubectl apply -f projects/lab.yaml
 kubectl apply -f apps/
 make wait-sync
 ```
@@ -145,6 +147,30 @@ kubectl -n lab-dev get jobs
 kubectl -n lab-dev logs job/dev-migrate
 kubectl -n lab-dev logs job/dev-smoke-test
 ```
+
+## 10. Testar os limites do AppProject
+
+As Applications dos passos anteriores são o exemplo permitido: usam o projeto `lab`
+e sincronizam em `lab-dev` e `lab-prod`. O projeto permite Service, Deployment e Job;
+Namespace é permitido para `CreateNamespace=true`. Outros tipos de recurso são
+bloqueados. Essas regras controlam o ArgoCD; comandos kubectl seguem o RBAC do cluster.
+A permissão de Namespace vale para o tipo, não restringe nomes de Namespace.
+
+O exemplo abaixo aponta para `lab-blocked`, fora dos destinos permitidos. Não possui
+sync automático. Esperado: condição `InvalidSpecError` com mensagem de destino não
+permitido, sem criar workloads. Não faça sync nem altere o projeto para liberar o exemplo.
+
+```bash
+kubectl apply -f examples/blocked-destination.yaml
+kubectl -n argocd wait application/lab-blocked \
+  --for=jsonpath='{.status.conditions[0].type}'=InvalidSpecError --timeout=120s
+kubectl -n argocd get application lab-blocked \
+  -o jsonpath='{range .status.conditions[*]}{.type}{"\t"}{.message}{"\n"}{end}'
+kubectl -n argocd delete application lab-blocked
+```
+
+Para atualizar um lab existente, aplique `projects/lab.yaml` primeiro, depois `apps/`
+ou `appsets/lab.yaml`, conforme a variante em uso. O projeto `default` permanece intacto.
 
 ## Diagnóstico
 

@@ -1,0 +1,25 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: lab
+  namespace: argocd
+spec:
+  description: GitOps lab restricted to its repository and dev/prod namespaces
+  sourceRepos:
+    - https://github.com/tommmdl/argocd-lab.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: lab-dev
+    - server: https://kubernetes.default.svc
+      namespace: lab-prod
+  # Required for CreateNamespace=true; other cluster resource kinds are denied.
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceWhitelist:
+    - group: ""
+      kind: Service
+    - group: apps
+      kind: Deployment
+    - group: batch
+      kind: Job

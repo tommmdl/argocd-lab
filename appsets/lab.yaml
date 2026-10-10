@@ -19,7 +19,7 @@ spec:
     metadata:
       name: 'lab-{{ .env }}'
     spec:
-      project: default
+      project: lab
       source:
         repoURL: https://github.com/tommmdl/argocd-lab.git
         targetRevision: HEAD

@@ -1,7 +1,8 @@
+# Intentionally rejected by project lab. No automated sync or deletion finalizer.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: lab-dev
+  name: lab-blocked
   namespace: argocd
 spec:
   project: lab
@@ -11,10 +12,4 @@ spec:
     path: overlays/dev
   destination:
     server: https://kubernetes.default.svc
-    namespace: lab-dev
-  syncPolicy:
-    automated:
-      selfHeal: false
-      prune: true
-    syncOptions:
-      - CreateNamespace=true
+    namespace: lab-blocked

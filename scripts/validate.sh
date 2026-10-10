@@ -14,4 +14,4 @@ kubeconform -strict -summary -kubernetes-version "$KUBERNETES_VERSION" \
   "$tmp/dev.yaml" "$tmp/prod.yaml" pratica/
 kubeconform -strict -summary \
   -schema-location "$tmp/schemas/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
-  apps/ appsets/
+  apps/ appsets/ projects/ examples/

@@ -11,6 +11,8 @@ base/                  nginx Deployment and Service, with requests, limits and p
                        sync waves and PreSync/PostSync hook Jobs
 overlays/dev/          namespace lab-dev, prefix dev-, 1 replica
 overlays/prod/         namespace lab-prod, prefix prod-, 3 replicas, higher CPU request
+projects/lab.yaml       AppProject limiting repository, destinations and resource kinds
+examples/              Application with an intentionally blocked destination
 apps/app-dev.yaml      ArgoCD Application, self-heal OFF
 apps/app-prod.yaml     ArgoCD Application, self-heal ON
 appsets/lab.yaml       ApplicationSet generating both Applications from one template
@@ -35,6 +37,23 @@ depending on the Git polling cycle.
 
 Same command, opposite result, depending on where the change comes from and on the
 self-heal setting.
+
+## Project boundaries
+
+Both Applications and the ApplicationSet use project `lab`. Apply
+`projects/lab.yaml` before creating them. The project permits only this repository,
+the in-cluster API server, and destinations `lab-dev` and `lab-prod`. Its workload
+allowlist contains Service, Deployment and Job; Namespace is the only permitted
+cluster resource kind, supporting `CreateNamespace=true`.
+
+These are Argo CD application policies, not Kubernetes RBAC: direct kubectl access
+still follows the user's cluster permissions. Namespace permission is by kind,
+not by namespace name. The `default` project is not modified.
+
+Step 10 of the walkthrough compares an allowed Application with an intentionally
+blocked destination. CI checks that rejection and the successful dev/prod syncs.
+When using a fork, update the project's `sourceRepos` as well as all `repoURL` fields.
+See the [Argo CD project documentation](https://argo-cd.readthedocs.io/en/stable/user-guide/projects/).
 
 ## ApplicationSet variant
 
@@ -77,6 +96,7 @@ make validate
 make setup
 export PATH="$PWD/.tools/bin:$PATH"
 kubectl config use-context kind-lab
+kubectl apply -f projects/lab.yaml
 kubectl apply -f apps/
 make wait-sync
 make status
@@ -85,7 +105,7 @@ make status
 `make tools` installs binaries locally in `.tools/bin`, verifying their published
 checksums. `make validate` needs no cluster: it renders dev/prod, validates the
 workloads and practice examples against Kubernetes schemas, and validates Applications
-and ApplicationSet against CRDs from the pinned Argo CD release. Missing schemas fail
+ApplicationSet, AppProject and the blocked example against CRDs from the pinned Argo CD release. Missing schemas fail
 the check. Schema validation does not cover controller behavior or scheduling.
 
 GitHub Actions runs these same checks on pull requests and pushes to main. It also
