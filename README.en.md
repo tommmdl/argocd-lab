@@ -63,3 +63,7 @@ The existing `scripts/` and CI workflow test Nginx in a separate cluster named `
 This is a local learning environment, without notes application authentication or production infrastructure. The standard Argo CD installation has broad cluster permissions; the AppProject restricts this Application, not the whole installation. Setup and verification were carried out with assistant help.
 
 References: [installation](https://argo-cd.readthedocs.io/en/stable/getting_started/) and [automated sync and self-heal](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/).
+
+## Follow requests
+
+[tracing-lab](https://github.com/tommmdl/tracing-lab) adds an OpenTelemetry-instrumented image. The option lives in `workloads/notes-traced`, while basic manifests remain in `workloads/notes`. Build and load the image first, then use that project's `scripts/argocd.sh` to select the option. Reapplying `notes/application.yaml` selects the basic application again.

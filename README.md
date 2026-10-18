@@ -63,3 +63,7 @@ Os scripts `scripts/` e a pipeline existente continuam voltados ao Nginx, em um 
 É um ambiente de estudo local, sem autenticação na aplicação de notas nem estrutura de produção. A instalação padrão do Argo CD tem permissões amplas no cluster; o AppProject restringe esta Application, não a instalação inteira. A configuração e os testes foram feitos com ajuda do assistente.
 
 Referências: [instalação](https://argo-cd.readthedocs.io/en/stable/getting_started/) e [sincronização automática e self-heal](https://argo-cd.readthedocs.io/en/stable/user-guide/auto_sync/).
+
+## Acompanhar as requisições
+
+O [tracing-lab](https://github.com/tommmdl/tracing-lab) adiciona uma imagem instrumentada com OpenTelemetry. A opção fica em `workloads/notes-traced`; os manifestos básicos continuam em `workloads/notes`. Construa e carregue a imagem primeiro e use o script `scripts/argocd.sh` daquele projeto para escolher a opção. Reaplicar `notes/application.yaml` volta à aplicação básica.
