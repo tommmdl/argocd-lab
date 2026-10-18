@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: notes-config
+  namespace: notes-lab
+data:
+  DB_HOST: postgres
+  DB_NAME: notes
+  DB_USER: lab
+  DB_PASSWORD_FILE: /run/secrets/db_password

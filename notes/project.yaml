@@ -1,0 +1,16 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: notes
+  namespace: argocd
+spec:
+  sourceRepos: [https://github.com/tommmdl/argocd-lab.git]
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: notes-lab
+  namespaceResourceWhitelist:
+    - {group: "", kind: ConfigMap}
+    - {group: "", kind: Service}
+    - {group: apps, kind: Deployment}
+    - {group: apps, kind: StatefulSet}
+    - {group: batch, kind: Job}
