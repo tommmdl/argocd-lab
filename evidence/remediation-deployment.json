@@ -1,0 +1,27 @@
+{
+  "executed_at_utc": "2026-10-18T22:56:04Z",
+  "compose_databases": {
+    "docker-lab-db-1": {
+      "rows_and_content_preserved": true,
+      "row_count": 0
+    },
+    "github-actions-lab-demo-db-1": {
+      "rows_and_content_preserved": true,
+      "row_count": 0
+    }
+  },
+  "kubernetes": {
+    "rows_and_content_preserved": true,
+    "row_count": 0,
+    "pvc_uid_unchanged": true,
+    "volume_name_unchanged": true,
+    "argocd_sync": "Synced",
+    "argocd_health": "Healthy",
+    "git_revision": "4b571ab85a00105a2838f9642b89633179238bef"
+  },
+  "http_readiness": {
+    "8000": 200,
+    "8001": 200,
+    "8005": 200
+  }
+}
