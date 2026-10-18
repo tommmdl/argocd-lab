@@ -48,7 +48,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: postgres
-          image: postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
+          image: ghcr.io/tommmdl/docker-lab@sha256:3150abf7b42612192bce29be02c49880eb17f0f97c93b5527a58ae7454e97dec
           env:
             - name: POSTGRES_DB
               value: notes

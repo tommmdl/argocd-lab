@@ -67,3 +67,5 @@ Referências: [instalação](https://argo-cd.readthedocs.io/en/stable/getting_st
 ## Acompanhar as requisições
 
 O [tracing-lab](https://github.com/tommmdl/tracing-lab) adiciona uma imagem instrumentada com OpenTelemetry. A opção fica em `workloads/notes-traced`; os manifestos básicos continuam em `workloads/notes`. Construa e carregue a imagem primeiro e use o script `scripts/argocd.sh` daquele projeto para escolher a opção. Reaplicar `notes/application.yaml` volta à aplicação básica.
+
+Os digests das imagens agora incluem a primeira rodada de correções na API e no PostgreSQL. O banco continua na versão 17 e no Bookworm; mudam o auxiliar gosu e suas dependências Go. A API atualiza Flask/liblzma e remove da execução as ferramentas de instalação do pip. Veja os [relatórios completos de antes e depois](https://github.com/tommmdl/security-lab/blob/main/docs/remediation.md). Os achados restantes continuam bloqueando o gate de segurança separado.
