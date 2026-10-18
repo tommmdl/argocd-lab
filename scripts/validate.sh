@@ -10,8 +10,9 @@ python3 scripts/argocd-schemas.py "$ARGOCD_VERSION" "$tmp/schemas"
 for env in dev prod; do
   kubectl kustomize "overlays/$env" > "$tmp/$env.yaml"
 done
+kubectl kustomize workloads/notes > "$tmp/notes.yaml"
 kubeconform -strict -summary -kubernetes-version "$KUBERNETES_VERSION" \
-  "$tmp/dev.yaml" "$tmp/prod.yaml" pratica/
+  "$tmp/dev.yaml" "$tmp/prod.yaml" "$tmp/notes.yaml" pratica/
 kubeconform -strict -summary \
   -schema-location "$tmp/schemas/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json" \
-  apps/ appsets/ projects/ examples/
+  apps/ appsets/ projects/ examples/ notes/application.yaml notes/project.yaml
