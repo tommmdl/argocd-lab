@@ -12,7 +12,7 @@
   "second_drift_corrected": true,
   "pvc_preserved": true,
   "note_preserved": true,
-  "source_revision": "8ac79c0c63a153de64f999b4bd9d255466fc2676",
+  "source_revision": "c46b4c37728ece7592fd1011cfa7b5196430aea7",
   "argocd_version": "v3.5.5",
-  "executed_at": "2026-10-19T00:55:23Z"
+  "executed_at": "2026-10-19T16:37:23Z"
 }
