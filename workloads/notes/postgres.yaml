@@ -41,6 +41,7 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext:
+        runAsNonRoot: true
         runAsUser: 999
         runAsGroup: 999
         fsGroup: 999
@@ -48,7 +49,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: postgres
-          image: ghcr.io/tommmdl/docker-lab@sha256:3150abf7b42612192bce29be02c49880eb17f0f97c93b5527a58ae7454e97dec
+          image: ghcr.io/tommmdl/docker-lab@sha256:be42c09595d7059956490eeab607b742afc96268db48f91f4eb1fd53edc89b52
           env:
             - name: POSTGRES_DB
               value: notes
@@ -65,6 +66,7 @@ spec:
               cpu: 100m
               memory: 128Mi
             limits:
+              cpu: "1"
               memory: 384Mi
           securityContext:
             allowPrivilegeEscalation: false
