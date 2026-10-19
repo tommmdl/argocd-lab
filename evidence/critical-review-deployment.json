@@ -1,0 +1,51 @@
+{
+  "executed_at_utc": "2026-10-19T00:28:29Z",
+  "image": "ghcr.io/tommmdl/docker-lab@sha256:be42c09595d7059956490eeab607b742afc96268db48f91f4eb1fd53edc89b52",
+  "instances": {
+    "kubernetes": {
+      "notes_preserved": true,
+      "row_count": 0,
+      "sqlite_installed": false,
+      "roles": {
+        "app_superuser": false,
+        "bootstrap_role": "notes_bootstrap",
+        "administrative_passwords_cleared": true,
+        "table_owner": "lab"
+      }
+    },
+    "compose": {
+      "notes_preserved": true,
+      "row_count": 0,
+      "sqlite_installed": false,
+      "roles": {
+        "app_superuser": false,
+        "bootstrap_role": "notes_bootstrap",
+        "administrative_passwords_cleared": true,
+        "table_owner": "lab"
+      }
+    },
+    "demo": {
+      "notes_preserved": true,
+      "row_count": 0,
+      "sqlite_installed": false,
+      "roles": {
+        "app_superuser": false,
+        "bootstrap_role": "notes_bootstrap",
+        "administrative_passwords_cleared": true,
+        "table_owner": "lab"
+      }
+    }
+  },
+  "http_readiness": {
+    "8000": 200,
+    "8001": 200,
+    "8005": 200
+  },
+  "kubernetes": {
+    "pvc_uid_preserved": true,
+    "volume_preserved": true,
+    "argocd_sync": "Synced",
+    "argocd_health": "Healthy",
+    "revision": "ac556bd5506fa6685d79fc49bb15594a69068f98"
+  }
+}
