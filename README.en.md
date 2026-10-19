@@ -1,6 +1,10 @@
 # Argo CD in practice
 
 English · [Português](README.md)
+## Current API: Alpine, including OpenTelemetry
+
+The main labs now use the released Alpine digests: basic API for Docker/basic Kubernetes and instrumented API for the GitOps tracing workload. Backups were restored separately and actual image rollback preserved notes written after cutover. Database images, credentials and volumes stay in place. [Adoption, tested rollback and complete evidence](https://github.com/tommmdl/security-lab/blob/main/docs/api-adoption.en.md). Retained Debian findings remain visible.
+
 ## Current database: Alpine, with a tested rollback
 
 The labs now use the tested PostgreSQL Alpine image by digest. Adoption used logical backups and new volumes; original Debian volumes are retained. Actual API rollback preserved a note written after cutover. Read the [migration, backup and recovery procedure](https://github.com/tommmdl/security-lab/blob/main/docs/postgres-adoption.en.md). Earlier security reports remain available.
