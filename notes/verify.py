@@ -35,7 +35,7 @@ note=None
 try:
     wait(healthy,300)
     revision=app()['status']['sync']['revision']
-    pvc=obj('-n','notes-lab','get','pvc','data-postgres-0')['metadata']['uid']
+    pvc=obj('-n','notes-lab','get','pvc','data-postgres-alpine-0')['metadata']['uid']
     note=request('POST','/notes',{'title':'Argo CD self-heal verification'})
     heal(False)
     k('-n','notes-lab','scale','deployment/notes-api','--replicas=3')
@@ -51,7 +51,7 @@ try:
     k('-n','notes-lab','scale','deployment/notes-api','--replicas=3')
     wait(lambda: replicas()==2 and healthy())
     results['second_drift_corrected']=True
-    assert obj('-n','notes-lab','get','pvc','data-postgres-0')['metadata']['uid']==pvc
+    assert obj('-n','notes-lab','get','pvc','data-postgres-alpine-0')['metadata']['uid']==pvc
     assert any(n['id']==note['id'] for n in request('GET','/notes')['notes'])
     results.update(pvc_preserved=True,note_preserved=True,source_revision=revision,argocd_version='v3.5.5',executed_at=time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()))
     (ROOT/'evidence').mkdir(exist_ok=True)

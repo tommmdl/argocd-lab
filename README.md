@@ -1,6 +1,10 @@
 # Argo CD na prática
 
 [English](README.en.md) · Português
+## Banco atual: Alpine, com rollback testado
+
+Os labs agora usam a imagem PostgreSQL Alpine testada, fixada por digest. A adoção usou backup lógico e volumes novos; os volumes Debian originais continuam guardados. O rollback real da API preservou uma nota criada depois da troca. Veja o [procedimento de migração, backup e recuperação](https://github.com/tommmdl/security-lab/blob/main/docs/postgres-adoption.md). Os relatórios de segurança anteriores continuam disponíveis.
+
 
 A aplicação de notas já rodava no Kubernetes. Agora o Git passa a guardar o estado que o Argo CD deve manter: duas réplicas da API, PostgreSQL e as configurações do ambiente.
 
@@ -68,7 +72,9 @@ Referências: [instalação](https://argo-cd.readthedocs.io/en/stable/getting_st
 
 O [tracing-lab](https://github.com/tommmdl/tracing-lab) adiciona uma imagem instrumentada com OpenTelemetry. A opção fica em `workloads/notes-traced`; os manifestos básicos continuam em `workloads/notes`. Construa e carregue a imagem primeiro e use o script `scripts/argocd.sh` daquele projeto para escolher a opção. Reaplicar `notes/application.yaml` volta à aplicação básica.
 
-Os digests das imagens agora incluem a primeira rodada de correções na API e no PostgreSQL. O banco continua na versão 17 e no Bookworm; mudam o auxiliar gosu e suas dependências Go. A API atualiza Flask/liblzma e remove da execução as ferramentas de instalação do pip. Veja os [relatórios completos de antes e depois](https://github.com/tommmdl/security-lab/blob/main/docs/remediation.md). Os achados restantes continuam bloqueando o gate de segurança separado.
+## Etapas anteriores de segurança (evidências históricas)
+
+Na etapa anterior, os digests das imagens incluíram a primeira rodada de correções na API e no PostgreSQL. Naquela etapa, o banco continuou na versão 17 e no Bookworm; mudaram o auxiliar gosu e suas dependências Go. A API atualiza Flask/liblzma e remove da execução as ferramentas de instalação do pip. Veja os [relatórios completos de antes e depois](https://github.com/tommmdl/security-lab/blob/main/docs/remediation.md). Os achados restantes continuam bloqueando o gate de segurança separado.
 
 Validação das correções: 23 testes do Compose, restauração controlada de três notas da imagem original do PostgreSQL para a recompilada e 19 testes locais de tracing. A aplicação do Argo CD está Synced/Healthy e mantém o mesmo PVC. As evidências completas e as pendências estão no link acima.
 

@@ -1,3 +1,4 @@
+# Existing installations must follow docs/postgres-adoption before applying.
 apiVersion: v1
 kind: Service
 metadata:
@@ -5,10 +6,108 @@ metadata:
   namespace: notes-lab
 spec:
   selector:
-    app: notes-db
+    app: notes-db-alpine
   ports:
     - port: 5432
       targetPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-alpine-headless
+  namespace: notes-lab
+spec:
+  clusterIP: None
+  selector:
+    app: notes-db-alpine
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-alpine
+  namespace: notes-lab
+spec:
+  serviceName: postgres-alpine-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes-db-alpine
+  template:
+    metadata:
+      labels:
+        app: notes-db-alpine
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres-alpine
+          image: ghcr.io/tommmdl/docker-lab@sha256:8b6813ec76804698c33e4dac8f501ca8f641affcbd27cbc3b7dd6fdb02874fc3
+          env:
+            - name: POSTGRES_INITDB_ARGS
+              value: --encoding=UTF8 --locale=C.UTF-8 --locale-provider=icu --icu-locale=en-US
+            - name: POSTGRES_DB
+              value: notes
+            - name: POSTGRES_USER
+              value: lab
+            - name: POSTGRES_PASSWORD_FILE
+              value: /run/secrets/db_password
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 384Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]
+          readinessProbe:
+            exec:
+              command: [pg_isready, -U, lab, -d, notes]
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          livenessProbe:
+            exec:
+              command: [pg_isready, -U, lab, -d, notes]
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: password
+              mountPath: /run/secrets
+              readOnly: true
+      volumes:
+        - name: password
+          secret:
+            secretName: notes-db
+            defaultMode: 0444
+            items:
+              - key: password
+                path: db_password
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: standard
+        resources:
+          requests:
+            storage: 1Gi
 ---
 apiVersion: v1
 kind: Service
@@ -23,6 +122,7 @@ spec:
     - port: 5432
       targetPort: 5432
 ---
+# Retained Debian StatefulSet: never mount this PVC in Alpine.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -30,7 +130,7 @@ metadata:
   namespace: notes-lab
 spec:
   serviceName: postgres-headless
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
       app: notes-db
