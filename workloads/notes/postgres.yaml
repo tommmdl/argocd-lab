@@ -50,7 +50,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: postgres-alpine
-          image: ghcr.io/tommmdl/docker-lab@sha256:8b6813ec76804698c33e4dac8f501ca8f641affcbd27cbc3b7dd6fdb02874fc3
+          image: ghcr.io/tommmdl/docker-lab@sha256:d99044c05eaac0efa5a3d7bab28ab14a60fe77018cc7c683d6495520ba7bfc4b
           env:
             - name: POSTGRES_INITDB_ARGS
               value: --encoding=UTF8 --locale=C.UTF-8 --locale-provider=icu --icu-locale=en-US
